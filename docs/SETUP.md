@@ -35,13 +35,26 @@ brew install graphviz         # `dot` must be on PATH for diagram rendering
 
 Drop assignment PDFs/photos into `ingestion/samples/` (gitignored).
 
-## 4. Xcode signing (free provisioning)
+## 4. Xcode project (generated, not committed)
 
-- Open `app/TutorBank.xcodeproj`, select your personal team under Signing & Capabilities
-  for BOTH targets (iOS + watchOS). One bundle ID family, two targets.
+```bash
+brew install xcodegen        # once
+cd app
+./scripts/gen_secrets.sh     # .env -> Shared/Secrets.swift (gitignored)
+xcodegen generate            # project.yml -> TutorBank.xcodeproj
+open TutorBank.xcodeproj
+```
+
+Re-run `gen_secrets.sh` whenever `.env` changes; re-run `xcodegen generate` whenever
+files are added/removed or `project.yml` changes.
+
+## 5. Xcode signing (free provisioning)
+
+- In Xcode, select your personal team under Signing & Capabilities for BOTH targets
+  (iOS + watchOS). One bundle ID family, two targets.
 - Free provisioning profiles expire every **7 days**.
 
-## 5. ⏰ Weekly re-sign ritual (Sundays)
+## 6. ⏰ Weekly re-sign ritual (Sundays)
 
 Every Sunday: plug in the iPhone, open Xcode, build & run the iOS target once (watch app
 installs alongside). That re-signs both apps for the next 7 days. If the watch app ever
