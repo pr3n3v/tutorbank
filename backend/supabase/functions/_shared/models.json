@@ -1,0 +1,6 @@
+{
+  "_comment": "SINGLE source of truth for DeepSeek model ids (CLAUDE.md §5). Edge functions import this; ingestion/ingest.py reads it at startup. Verified against api-docs.deepseek.com 2026-07-15 (legacy deepseek-chat/-reasoner retire 2026-07-24).",
+  "base_url": "https://api.deepseek.com",
+  "accurate": "deepseek-v4-pro",
+  "fast": "deepseek-v4-flash"
+}

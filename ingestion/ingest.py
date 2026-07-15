@@ -8,12 +8,18 @@ See CLAUDE.md §5 (generation), §6 (diagrams), §9 (build order).
 """
 
 import argparse
+import json
 import sys
+from pathlib import Path
 
-# Model names must live in ONE place (CLAUDE.md §5). Verify against DeepSeek docs
-# before first generation run — legacy deepseek-chat/-reasoner die 2026-07-24.
-MODEL_GENERATE = "deepseek-v4-pro"
-MODEL_LIVE = "deepseek-v4-flash"
+# Model ids live in ONE place (CLAUDE.md §5): the shared models.json that the
+# Edge Functions also import.
+_MODELS = json.loads(
+    (Path(__file__).resolve().parent.parent
+     / "backend" / "supabase" / "functions" / "_shared" / "models.json").read_text()
+)
+DEEPSEEK_BASE_URL = _MODELS["base_url"]
+MODEL_GENERATE = _MODELS["accurate"]  # generation + cross-model verification
 
 WATCH_PNG_SIZE = (368, 448)  # SE 3 44 mm; render DOT at 2x (736x896) and downscale
 

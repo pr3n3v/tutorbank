@@ -1,0 +1,9 @@
+project_id = "tutorbank"
+
+# Clients authenticate with the X-App-Secret header only (CLAUDE.md §3) — the
+# shared secret is the gate, so Supabase JWT verification is disabled.
+[functions.sync]
+verify_jwt = false
+
+[functions.ask]
+verify_jwt = false

@@ -26,3 +26,6 @@ ingestion/samples/*
 
 # Ingestion artifacts
 ingestion/out/
+
+# Supabase CLI local state
+**/.temp/
