@@ -40,3 +40,14 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: StudyTimer
         INFOPLIST_KEY_WKApplication: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.pr3n3v.tutorbank
+  TutorBankWatchUITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    sources:
+      - TutorBankWatchUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.tutorbank.watchkitapp.uitests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: TutorBankWatch

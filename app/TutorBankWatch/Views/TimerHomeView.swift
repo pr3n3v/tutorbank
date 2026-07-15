@@ -14,6 +14,10 @@ final class StudyTimer: ObservableObject {
     private static let stateKey = "studyTimer.state.v1"
 
     init() {
+        // UI tests pass -uitestReset for a hermetic 00:00 starting state.
+        if ProcessInfo.processInfo.arguments.contains("-uitestReset") {
+            UserDefaults.standard.removeObject(forKey: Self.stateKey)
+        }
         restore()
     }
 
@@ -77,6 +81,7 @@ struct TimerHomeView: View {
                     .onLongPressGesture(minimumDuration: 1.2) {
                         showTutor = true
                     }
+                    .accessibilityIdentifier("timerDisplay")
             }
 
             HStack(spacing: 8) {
