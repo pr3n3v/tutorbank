@@ -1,0 +1,28 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+build/
+DerivedData/
+*.xcscmblueprint
+
+# Assignment source files (personal content, can be large)
+ingestion/samples/*
+!ingestion/samples/.gitkeep
+
+# Ingestion artifacts
+ingestion/out/

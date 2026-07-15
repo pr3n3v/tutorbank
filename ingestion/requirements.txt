@@ -1,0 +1,8 @@
+# TutorBank ingestion — pinned at M1 start; versions verified then
+supabase          # DB + storage inserts (service role)
+openai            # DeepSeek is OpenAI-compatible (base_url=https://api.deepseek.com)
+sympy             # symbolic verification of computational answers
+graphviz          # DOT -> PNG rendering (needs system `dot`: brew install graphviz)
+pymupdf           # PDF text extraction
+pillow            # PNG downscaling for the watch target
+python-dotenv     # loads ../.env
