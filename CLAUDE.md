@@ -1,4 +1,4 @@
-# TutorBank — Personal Question-Bank Assistant (Watch + iPhone + Backend)
+# TutorBank — Personal Question-Bank Assistant (Watch + Backend + Mac tooling)
 
 > **Read me first (Claude Code):** This file is the single source of truth for this project.
 > It encodes decisions already made with the user. Do not re-litigate them; ask only when
@@ -11,8 +11,10 @@
 A personal tutoring aid for the user, who teaches his younger brother. Known assignment
 questions are **pre-solved once, verified, and cached** in a database. An Apple Watch SE 3
 app shows a **boxed final answer at a glance, with the full exam-ready working one scroll
-below**. A companion iPhone app holds the same content with more room, big diagrams, and
-content management. A small backend proxies live AI queries.
+below** — the watch is the COMPLETE viewing device, including large diagrams (zoom/pan
+viewer, §6). Verification and content management happen **on the Mac**, alongside
+ingestion. There is no iPhone app beyond a minimal shell (§7). A small backend proxies
+live AI queries.
 
 **Prime directive for output style (two tiers, both mandatory):**
 - **`summary` — the glance line.** ONE line: the boxed final answer, exam-ready, Unicode
@@ -47,17 +49,19 @@ earns zero marks.
         ▼
 [Supabase Postgres]  ◄────────── content additions are DATA ONLY, never app changes
         │
-        ├── Supabase Edge Function  /sync   → full question bank JSON (watch/phone cache)
+        ├── Supabase Edge Function  /sync   → full question bank JSON (watch cache)
         └── Supabase Edge Function  /ask    → live DeepSeek proxy (ad-hoc chat, value swaps)
         ▲
         │  HTTPS + shared-secret header
-[watchOS app (SwiftUI)] ↔ [iOS companion app]
+[watchOS app (SwiftUI)]   (iOS target = minimal shell only, §7)
+        ▲
+[Mac verification & content tool] — reviews/edits DB content directly (service key)
 ```
 
 - **Database + backend host:** Supabase (already provisioned by user). Edge Functions hold
   the DeepSeek key. Alternative host if ever needed: Cloudflare Workers. Do not use
   Render/Railway free tiers (cold-start / trial limitations).
-- **Offline-first:** the watch and phone cache the entire bank locally. Cached answers must
+- **Offline-first:** the watch caches the entire bank locally. Cached answers must
   open with **zero network**. Only `/ask` (live chat, value swaps) needs connectivity.
 - **Ingestion runs locally** on the Mac (Python script), not hosted. It writes to
   Supabase with the service-role key from a local `.env` (never committed).
@@ -103,11 +107,11 @@ answers
   variant text default 'default'   -- 'default' or serialized swapped values e.g. 'a=5'
   summary text             -- ★ THE GLANCE LINE. One line, boxed final answer, Unicode math.
   answer text              -- ★ FULL EXAM-SCORING solution: every step, method, boxed final.
-                           --   Shown on watch (scroll) AND phone. First-class, not storage.
+                           --   Shown on the watch (scroll). First-class, not storage.
   final_answer text        -- boxed final result where applicable
   diagram_dot text         -- nullable; Graphviz DOT source
   diagram_png_watch text   -- nullable; storage path, sized for SE 3 (see §6)
-  diagram_png_phone text   -- nullable; storage path, full-size render
+  diagram_png_phone text   -- nullable; storage path, HIGH-RES render for the watch zoom viewer (§6; legacy column name)
   followups jsonb          -- nullable, OPTIONAL: [{q, a}] likely student follow-ups (a = one line; shape matches §5 contract)
   model_used text
   confidence numeric       -- model self-rating 0–1
@@ -136,7 +140,7 @@ run up unbounded cost.
 - `predict_output` → summary = the exact program output, one line. Ideal glance case.
 - `program` → summary = the ONE key line/idea (e.g. `c[i][j] += a[i][k]*b[k][j]` — triple
   loop). The **full compilable program is the exam answer** and lives in `answer` — shown
-  on the watch as a scrollable monospaced block (§7a) and full on the phone. The *summary*
+  on the watch as a scrollable monospaced block (§7a). The *summary*
   is never the whole program (that can't glance), but the program itself must be present
   and complete.
 
@@ -188,8 +192,8 @@ Base system-prompt rules (apply to every subject):
 2. **Non-computational (proofs, theory, code):** independent second-model cross-check
    (call `deepseek-v4-pro` again with a "verify this answer, reply VALID/INVALID+reason"
    prompt, or another provider if configured). Disagreement → flag.
-3. Everything lands with `verified=false`; the iPhone app surfaces unverified answers for
-   the user to eyeball and flip. Low `confidence` sorts first.
+3. Everything lands with `verified=false`; the Mac verification tool (§7) surfaces
+   unverified answers for the user to eyeball and flip. Low `confidence` sorts first.
 
 ### Value-swap variants
 - Questions with `variables` are stored as templates.
@@ -204,14 +208,18 @@ Base system-prompt rules (apply to every subject):
 
 - The watch **cannot render SVG** (no runtime SVG support in SwiftUI, no WebView on
   watchOS; SVGKit/SDWebImage SVG paths are broken there). **Ship PNG.**
-- Ingestion renders DOT with Graphviz twice:
-  - **Phone PNG:** full size, no constraints.
-  - **Watch PNG:** target the user's SE 3 — **44 mm, 368×448** (resolved, see §12). Render
-    at 2× and downscale for crispness. Thick strokes, high contrast, minimum font ~28 pt
-    at 2×.
-- **State-count rule:** ≤5 states → watch PNG is the diagram. >5 states → watch gets the
-  formal one-liner in `summary` (+ optionally a rendered transition-table PNG, which packs
-  more info per pixel); full diagram is phone-only.
+- **Every diagram is viewable on the watch** — there is no phone fallback. Ingestion
+  renders DOT with Graphviz twice:
+  - **Inline PNG** (`diagram_png_watch`): fits the SE 3 screen — **44 mm, 368×448**
+    (resolved, see §12). Render at 2× and downscale for crispness. Thick strokes, high
+    contrast, minimum font ~28 pt at 2×.
+  - **Detail PNG** (`diagram_png_phone` — column name kept for compatibility): a
+    high-resolution render (~3–4× the screen, cap ~1600 px on the long edge) used by the
+    watch's **full-screen zoom/pan viewer** (§7). Must stay legible when zoomed.
+- **State-count rule (display, not availability):** ≤5 states → the inline PNG reads
+  as-is. >5 states → the inline PNG is a preview; the user taps it and reads the machine
+  in the zoom viewer (Digital Crown zooms, drag pans). Optionally ingestion also emits a
+  transition-table PNG (packs more info per pixel) as a second image.
 
 ---
 
@@ -230,9 +238,11 @@ keep module boundaries clean.)
 - Tutor UI navigation: **Subject → Unit → Question → Answer** (all list-driven from cache).
 - **Answer screen (top → bottom):**
   1. `summary` — the boxed final answer, large type (the glance).
-  2. diagram PNG if present.
-  3. **Full worked solution** — `answer`, exam-complete, scrollable. This is the marks;
-     it lives on the watch too, not just the phone. Rendered as readable steps (see §7a).
+  2. inline diagram PNG if present — **tap → full-screen zoom/pan viewer** (Digital
+     Crown zooms, drag pans, uses the high-res detail PNG; §6). Large automata are READ
+     on the watch this way, not deferred to another device.
+  3. **Full worked solution** — `answer`, exam-complete, scrollable. This is the marks.
+     Rendered as readable steps (see §7a).
   4. **Change values** — if `variables` exist, a compact numeric input ("a = ? (was 3)")
      → live solve (§5 value-swap). Re-solving returns a fresh `summary` + full `answer`.
   5. **Ask about this** — an affordance below the answer → `/ask` with the question as
@@ -250,19 +260,31 @@ The `answer` is exam-complete and therefore long — the small screen handles it
 **scrolling**, not by truncating. Rules:
 - Math renders as **Unicode plain text** (same charset as `summary`); no LaTeX engine and
   no WebView on watchOS, so `answer` must be Unicode-legible as-is. If a step is only
-  expressible in LaTeX, the generator must also carry a Unicode rendering (the LaTeX stays
-  for the phone's richer view).
+  expressible in LaTeX, the generator must also carry a Unicode rendering (LaTeX may stay
+  in `answer` for the Mac verification tool's richer view).
 - Code / `predict_output` steps render in a **monospaced** block.
 - Steps are newline-separated so they wrap cleanly; keep each step to one idea per line.
 - The boxed `summary` stays pinned at the top as the glance; the working scrolls below.
 - Very wide artifacts (large tables, big DP grids) follow §6 — rendered to a PNG rather
   than crammed into text.
 
-### iOS companion app
-- Full answer view (`answer`, `final_answer`, LaTeX/rich rendering, full-size diagrams).
-- Verification queue: unverified/low-confidence answers → read → mark `verified`.
-- Content browser (subjects/assignments/units/questions) and manual edit affordances.
-- Sync trigger + connection status to Supabase.
+### iOS target = minimal shell only (decided 2026-07-16)
+There is **no iPhone companion app**. The iOS target exists solely because the project
+ships as one app with two targets (and in case device installation of the watch app
+requires the companion shell — confirm at signing time). It shows a static "TutorBank —
+content lives on the watch" screen. Do not grow features here.
+
+### Mac verification & content tool (replaces the old M4)
+Verification and content management happen on the Mac, where ingestion already runs and
+content originates:
+- **Verification queue:** after each ingestion run, review generated answers
+  (unverified / low-`confidence` first): full worked solution + rendered diagrams →
+  approve (flip `verified`) / edit / regenerate. Lightweight local UI — a small local web
+  page served by the ingestion tooling (Mac browser, not hosted) or a TUI; pick whichever
+  is fastest to build well.
+- **Content browser:** list/edit subjects, assignments, units, questions; fix typos,
+  reposition, delete.
+- Writes go straight to Supabase with the service-role key from `.env` (same as ingestion).
 
 ### watchOS platform gotchas (respect these)
 - No WKWebView. No localStorage-style web persistence. No side-button remapping.
@@ -303,7 +325,7 @@ The `answer` is exam-complete and therefore long — the small screen handles it
    synthetic questions per subject in the meantime.
 3. **M2 — Edge Functions:** `/sync` and `/ask` with shared-secret auth.
 4. **M3 — Watch app core:** timer disguise + secret entry + cached nav + answer screen.
-5. **M4 — iPhone companion:** full answers + verification queue.
+5. **M4 — Mac verification & content tool:** verification queue + content browser (§7).
 6. **M5 — Live features:** chat tab, value-swap live solve, cache-back.
 7. **M6 — Polish:** complication, App Intent, sync UX, Sunday re-sign reminder note in
    SETUP.md.
