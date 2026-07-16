@@ -35,6 +35,21 @@ brew install graphviz         # `dot` must be on PATH for diagram rendering
 
 Drop assignment PDFs/photos into `ingestion/samples/` (gitignored).
 
+## 3b. Verify & edit content (Mac review tool)
+
+Generated answers land `verified=false`. Review and approve them before trusting
+them on the watch:
+
+```bash
+cd ingestion && python3 review.py        # opens http://127.0.0.1:8765
+```
+
+A local, localhost-only web app (stdlib, no deps). Left panel queues every answer
+with **unverified / lowest-confidence first**; click one to read the question, edit
+the summary/full answer (with a live preview + the rendered diagram), then **Mark
+verified** or **Save edits**. Writes straight to Supabase with the service key from
+`.env` — keep it on localhost (it holds that key).
+
 ## 4. Xcode project (generated, not committed)
 
 ```bash
