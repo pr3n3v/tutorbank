@@ -10,12 +10,22 @@
 
 A personal tutoring aid for the user, who teaches his younger brother. Known assignment
 questions are **pre-solved once, verified, and cached** in a database. An Apple Watch SE 3
-app shows **one-line, exam-ready answers** at a glance. A companion iPhone app holds full
-solutions, big diagrams, and content management. A small backend proxies live AI queries.
+app shows a **boxed final answer at a glance, with the full exam-ready working one scroll
+below**. A companion iPhone app holds the same content with more room, big diagrams, and
+content management. A small backend proxies live AI queries.
 
-**Prime directive for output style:** the user wants *direct answers only*. No steps, no
-explanations, no pedagogy on the watch. One glanceable line. Full workings exist only as
-background storage on the phone side.
+**Prime directive for output style (two tiers, both mandatory):**
+- **`summary` — the glance line.** ONE line: the boxed final answer, exam-ready, Unicode
+  math. This is what the user reads mid-lesson without breaking eye contact. No steps.
+- **`answer` — the full exam-scoring solution.** The complete worked answer a student
+  writes to earn **full marks**: every step, the method named, the final answer boxed.
+  Engineering answers are long and **the marks are in the working** — so `answer` is a
+  first-class deliverable, NOT background storage. It must be exam-complete, never a sketch.
+
+The watch shows the `summary` big at the top, then the full `answer` scrollable beneath it
+(§7). The one-liner is the glance; the working is what you actually write/teach. This
+matters most for **EM2** (derivations) and other solve/proof questions where a bare result
+earns zero marks.
 
 ### Non-goals
 - No public release. Personal install via Xcode (free provisioning, 7-day re-sign).
@@ -91,8 +101,9 @@ answers
   id uuid pk
   question_id uuid fk -> questions
   variant text default 'default'   -- 'default' or serialized swapped values e.g. 'a=5'
-  summary text             -- ★ THE WATCH LINE. One line, exam-ready, Unicode math.
-  answer text              -- full worked solution (phone-only, background storage)
+  summary text             -- ★ THE GLANCE LINE. One line, boxed final answer, Unicode math.
+  answer text              -- ★ FULL EXAM-SCORING solution: every step, method, boxed final.
+                           --   Shown on watch (scroll) AND phone. First-class, not storage.
   final_answer text        -- boxed final result where applicable
   diagram_dot text         -- nullable; Graphviz DOT source
   diagram_png_watch text   -- nullable; storage path, sized for SE 3 (see §6)
@@ -122,9 +133,12 @@ run up unbounded cost.
 | DAA   | Design & Analysis of Algorithms       | `O(·)` bounds, recurrence solutions, algorithm name + one-line core idea |
 
 **Java split (locked):**
-- `predict_output` → summary = the exact program output, one line. Ideal watch case.
+- `predict_output` → summary = the exact program output, one line. Ideal glance case.
 - `program` → summary = the ONE key line/idea (e.g. `c[i][j] += a[i][k]*b[k][j]` — triple
-  loop); full code lives in `answer`, phone-only. Never attempt full code on the watch.
+  loop). The **full compilable program is the exam answer** and lives in `answer` — shown
+  on the watch as a scrollable monospaced block (§7a) and full on the phone. The *summary*
+  is never the whole program (that can't glance), but the program itself must be present
+  and complete.
 
 ---
 
@@ -144,8 +158,8 @@ One structured call per question. System prompt = base rules + the subject's
 
 ```json
 {
-  "summary": "one exam-ready line, Unicode math (∫ ² √ δ →), no explanation",
-  "answer": "full worked solution (background storage)",
+  "summary": "one exam-ready line: the boxed final answer, Unicode math (∫ ² √ δ →), no steps",
+  "answer": "FULL exam-scoring worked solution: every step, method named, final answer boxed",
   "final_answer": "boxed final result or null",
   "diagram_dot": "graphviz DOT or null",
   "followups": [{"q": "...", "a": "one line"}],
@@ -154,11 +168,18 @@ One structured call per question. System prompt = base rules + the subject's
 ```
 
 Base system-prompt rules (apply to every subject):
-- Role: expert tutor preparing answers a teacher will deliver — correct, complete, terse.
-- `summary` is what the user glances at mid-lesson: ONE line, no preamble, no "we get".
+- Role: expert tutor preparing answers a teacher will deliver to a student who must
+  reproduce them in an exam and **score full marks**. Correct, complete, and rigorous.
+- `answer` is the primary deliverable: the COMPLETE worked solution as written on an exam
+  sheet — every step shown, the method/rule named, intermediate results kept, the final
+  answer boxed. Do NOT abbreviate or skip steps; the marks are in the working. It is NOT
+  "background storage." Match the length the question deserves — long is fine, thin is not.
+- `summary` is the glance line drawn FROM that solution: ONE line, the boxed final answer
+  only, no preamble, no "we get", no steps. It must be consistent with `answer`'s result.
 - Math in Unicode, not LaTeX, in `summary`. Full LaTeX allowed inside `answer`.
 - Automata/graphs → emit `diagram_dot` (never ASCII art, never coordinates-by-hand SVG).
-- Store the clean final output only — never include chain-of-thought/reasoning dumps.
+- Show the worked steps in `answer`, but never include model chain-of-thought / "thinking"
+  meta-commentary — `answer` is the clean solution a student writes, not your reasoning log.
 
 ### Verification (locked)
 1. **Computational answers (EM2, parts of DAA):** re-check symbolically with **SymPy**
@@ -207,14 +228,35 @@ keep module boundaries clean.)
 - **Secret entry** to tutor UI: long-press on the timer face (fallback: Digital Crown
   rotation pattern). When app backgrounds/deactivates → auto-return to timer screen.
 - Tutor UI navigation: **Subject → Unit → Question → Answer** (all list-driven from cache).
-- Answer screen: `summary` line, large type; diagram PNG if present; if `variables` exist,
-  a compact numeric input ("a = ? (was 3)") → live solve.
-- **Chat tab:** dictation/Scribble → `/ask` → one-line reply (system prompt enforces
-  "one line unless explicitly asked for steps").
+- **Answer screen (top → bottom):**
+  1. `summary` — the boxed final answer, large type (the glance).
+  2. diagram PNG if present.
+  3. **Full worked solution** — `answer`, exam-complete, scrollable. This is the marks;
+     it lives on the watch too, not just the phone. Rendered as readable steps (see §7a).
+  4. **Change values** — if `variables` exist, a compact numeric input ("a = ? (was 3)")
+     → live solve (§5 value-swap). Re-solving returns a fresh `summary` + full `answer`.
+  5. **Ask about this** — an affordance below the answer → `/ask` with the question as
+     context, for a follow-up or an alternative phrasing. Reply is itself boxed-answer +
+     working (same two-tier shape), scrollable.
+- **Chat tab:** dictation/Scribble → `/ask` → boxed answer + full working (scrollable),
+  same two-tier output as cached answers. Not one-liners — exam-ready.
 - **Cache:** on launch/sync, pull `/sync` JSON + watch PNGs into local storage
   (`FileManager`/SwiftData). All cached content opens instantly offline.
 - Complication + Siri App Intent that deep-link straight into the tutor UI (they count as
   intentional entry, so they bypass the timer screen).
+
+### 7a. Rendering the full worked solution on the watch
+The `answer` is exam-complete and therefore long — the small screen handles it by
+**scrolling**, not by truncating. Rules:
+- Math renders as **Unicode plain text** (same charset as `summary`); no LaTeX engine and
+  no WebView on watchOS, so `answer` must be Unicode-legible as-is. If a step is only
+  expressible in LaTeX, the generator must also carry a Unicode rendering (the LaTeX stays
+  for the phone's richer view).
+- Code / `predict_output` steps render in a **monospaced** block.
+- Steps are newline-separated so they wrap cleanly; keep each step to one idea per line.
+- The boxed `summary` stays pinned at the top as the glance; the working scrolls below.
+- Very wide artifacts (large tables, big DP grids) follow §6 — rendered to a PNG rather
+  than crammed into text.
 
 ### iOS companion app
 - Full answer view (`answer`, `final_answer`, LaTeX/rich rendering, full-size diagrams).

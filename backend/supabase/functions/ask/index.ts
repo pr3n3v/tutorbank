@@ -1,7 +1,8 @@
-// /ask — live DeepSeek proxy (CLAUDE.md §2, §5, §9 M2). POST, auth via X-App-Secret.
+// /ask — live DeepSeek proxy (CLAUDE.md §2, §5, §7, §9 M2). POST, auth via X-App-Secret.
 // Body: { "prompt": string, "mode"?: "chat" | "solve", "context"?: string }
 //   chat  (default) -> fast model; solve -> accurate model (ids: _shared/models.json)
-// Reply is ONE line unless the prompt explicitly asks for steps.
+// Returns the two-tier answer shape used everywhere: { summary, answer } — a boxed
+// one-line result plus the full exam-ready working (§1 prime directive).
 
 import { json, requireAppSecret } from "../_shared/auth.ts";
 import {
@@ -13,11 +14,14 @@ import {
 } from "../_shared/config.ts";
 
 const SYSTEM_PROMPT = [
-  "You are an expert tutor answering on a tiny watch screen.",
-  "Reply with EXACTLY ONE line: the direct, exam-ready answer. No preamble,",
-  'no "we get", no explanation, no markdown.',
-  "Math in Unicode (∫ ² √ δ → λ Σ), never LaTeX.",
-  "Only if the user explicitly asks for steps may you use multiple short lines.",
+  "You are an expert tutor. The student must reproduce your answer in an exam and score",
+  "full marks, so give the COMPLETE worked solution — every step, method named, final",
+  "answer boxed. Engineering answers are long; the marks are in the working.",
+  "Respond with strict JSON only (no markdown fences):",
+  '{"summary": "...", "answer": "..."} where',
+  "`summary` is ONE line — the boxed final answer only, Unicode math (∫ ² √ δ → λ Σ),",
+  "no steps; and `answer` is the full step-by-step exam solution, Unicode-legible,",
+  "one idea per line, code in a monospaced block. summary must match answer's result.",
 ].join(" ");
 
 Deno.serve(async (req) => {
@@ -64,7 +68,12 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, messages, stream: false }),
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: false,
+        response_format: { type: "json_object" },
+      }),
       signal: AbortSignal.timeout(ASK_TIMEOUT_MS),
     });
   } catch (e) {
@@ -87,8 +96,28 @@ Deno.serve(async (req) => {
     return json({ error: timedOut ? "model timeout" : "malformed model response" }, timedOut ? 504 : 502);
   }
   // .content only — reasoning_content (chain-of-thought) is never returned (§5).
-  const reply: string = completion?.choices?.[0]?.message?.content?.trim() ?? "";
-  if (!reply) return json({ error: "empty model reply" }, 502);
+  const content: string = completion?.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!content) return json({ error: "empty model reply" }, 502);
 
-  return json({ reply, model, mode });
+  // Model was told to return {summary, answer} as strict JSON (response_format enforces
+  // valid JSON). Parse into the two-tier shape; degrade gracefully if a field is missing.
+  let summary = "";
+  let answer = "";
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === "object") {
+      summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+      answer = typeof parsed.answer === "string" ? parsed.answer.trim() : "";
+    } else {
+      // Valid JSON but not an object (bare string/number) — treat as the working.
+      answer = content;
+    }
+  } catch {
+    // Should not happen under json_object mode; treat the whole reply as the working.
+    answer = content;
+  }
+  if (!summary && !answer) return json({ error: "empty model reply" }, 502);
+  if (!summary) summary = answer.split("\n")[0].slice(0, 200);
+
+  return json({ summary, answer, model, mode });
 });

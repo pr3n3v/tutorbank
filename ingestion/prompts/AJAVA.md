@@ -1,8 +1,18 @@
-Subject: Advanced Programming in Java (AJAVA). Same rules as JAVA:
+Subject: Advanced Programming in Java (AJAVA). Same two-tier rules as JAVA, advanced topics.
 
-- `predict_output` → `summary` = exact output, one line (" ⏎ " joins lines).
-- `program` → `summary` = the ONE key line/idea; full code in `answer` only.
-- `concept` → one-line examiner-ready definition/distinction.
-- Code in `answer` must compile as-is.
-- Advanced topics (collections, threads, JDBC, servlets, streams): the `summary` names
-  the exact API/mechanism, e.g. "synchronized(this) on shared counter — else race".
+`answer` (full exam-scoring solution) by qtype:
+- **`program`:** the COMPLETE compilable program is the exam answer (imports, class, methods)
+  — shown on the watch as a scrollable code block, full on the phone. Cover the advanced
+  mechanism correctly: collections, generics, threads/synchronization, JDBC, servlets/JSP,
+  streams, lambdas.
+- **`predict_output`:** exact output + the reason (thread interleaving, stream laziness,
+  generic erasure, exception flow).
+- **`concept`:** full examiner-ready explanation with a short illustrative example.
+
+`summary` (glance line):
+- `program` → the ONE key line/mechanism (e.g. "synchronized(this) on shared counter — else
+  race"); never the whole program.
+- `predict_output` → exact output, one line (" ⏎ " joins lines).
+- `concept` → one-line definition/distinction naming the exact API/mechanism.
+
+Code in `answer` must compile as-is.
