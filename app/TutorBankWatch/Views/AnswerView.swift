@@ -41,10 +41,7 @@ struct AnswerView: View {
                     // The full exam-scoring working (§1, §7a) — the marks live here.
                     if let working = answer.answer, !working.isEmpty {
                         Divider()
-                        Text(working)
-                            .font(isCodeQuestion
-                                ? .system(.footnote, design: .monospaced)
-                                : .footnote)
+                        workingView(working)
                     }
 
                     if let followups = answer.followups, !followups.isEmpty {
@@ -64,5 +61,45 @@ struct AnswerView: View {
             }
         }
         .navigationTitle("Answer")
+    }
+
+    // Renders prose proportional and ```-fenced code/pseudocode monospaced (§7a),
+    // so algorithm blocks keep their alignment on the small screen.
+    @ViewBuilder
+    private func workingView(_ working: String) -> some View {
+        if working.contains("```") {
+            ForEach(Array(codeSegments(working).enumerated()), id: \.offset) { _, seg in
+                if seg.isCode {
+                    Text(seg.text)
+                        .font(.system(size: 13, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text(seg.text).font(.footnote)
+                }
+            }
+        } else {
+            // No fences: whole-answer monospace only for pure code/output questions.
+            Text(working)
+                .font(isCodeQuestion ? .system(.footnote, design: .monospaced) : .footnote)
+        }
+    }
+
+    /// Split on ``` fences into alternating prose / code segments, dropping a
+    /// leading language hint (```java) and empty pieces.
+    private func codeSegments(_ text: String) -> [(text: String, isCode: Bool)] {
+        var out: [(String, Bool)] = []
+        for (i, part) in text.components(separatedBy: "```").enumerated() {
+            var s = part
+            let isCode = i % 2 == 1
+            if isCode, let nl = s.firstIndex(of: "\n") {
+                let hint = s[..<nl].trimmingCharacters(in: .whitespaces)
+                if !hint.isEmpty, !hint.contains(" "), hint.count < 12 {
+                    s = String(s[s.index(after: nl)...])
+                }
+            }
+            let trimmed = s.trimmingCharacters(in: .newlines)
+            if !trimmed.isEmpty { out.append((trimmed, isCode)) }
+        }
+        return out
     }
 }

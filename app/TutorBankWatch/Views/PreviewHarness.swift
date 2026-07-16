@@ -17,9 +17,21 @@ struct PreviewHarness: View {
             }
     }
 
+    // The answer with the most ```-fenced blocks — best shows the monospaced code fix.
+    private var codeHeavyQuestion: Question? {
+        store.bank?.subjects
+            .flatMap { $0.units }
+            .flatMap { $0.questions }
+            .max { a, b in fenceCount(a) < fenceCount(b) }
+    }
+
+    private func fenceCount(_ q: Question) -> Int {
+        (q.defaultAnswer?.answer ?? "").components(separatedBy: "```").count - 1
+    }
+
     var body: some View {
         NavigationStack {
-            if let q = firstDiagramQuestion, let a = q.defaultAnswer {
+            if let q = codeHeavyQuestion ?? firstDiagramQuestion, let a = q.defaultAnswer {
                 if mode == "diagram",
                    let img = store.diagramDetailImage(for: a.id) ?? store.diagramImage(for: a.id) {
                     DiagramZoomView(image: img)

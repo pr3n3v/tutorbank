@@ -25,7 +25,10 @@ Rendering rules (the watch has no LaTeX engine and no web view):
 - `answer` should be Unicode-legible too; steps newline-separated, one idea per line.
   Full LaTeX may additionally appear where the phone benefits, but a Unicode rendering of
   each step must be present so the watch can show it as plain text.
-- Code renders as a monospaced block.
+- Wrap code, pseudocode, program output, and any aligned multi-line block (algorithm
+  listings, DP tables, derivations whose columns must line up) in triple-backtick fenced
+  blocks (```), so the watch renders them monospaced with alignment intact. Prose stays
+  outside the fences. Do not fence ordinary sentences.
 - Automata, graphs, and trees → emit `diagram_dot` (Graphviz DOT). Never ASCII art,
   never hand-placed-coordinate SVG.
 
