@@ -3,6 +3,6 @@ supabase          # DB + storage inserts (service role)
 openai            # DeepSeek is OpenAI-compatible (base_url=https://api.deepseek.com)
 sympy             # symbolic verification of computational answers
 graphviz          # DOT -> PNG rendering (needs system `dot`: brew install graphviz)
-pymupdf           # PDF text extraction
+pypdf             # PDF text extraction (pure Python, no system deps) — parse_docx.py
 pillow            # PNG downscaling for the watch target
 python-dotenv     # loads ../.env
