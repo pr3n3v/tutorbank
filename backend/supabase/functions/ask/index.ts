@@ -12,6 +12,43 @@ import {
   MODEL_LIVE,
   MODEL_SOLVE,
 } from "../_shared/config.ts";
+import { unicodeAnswer, unicodeSummary } from "../_shared/mathtext.ts";
+
+/** Extract {summary, answer} from a model reply that may be fenced or slightly
+ *  malformed JSON. Tries strict parse, then lenient per-field regex. */
+function parseTwoTier(content: string): { summary: string; answer: string } {
+  // Strip a wrapping ```json ... ``` fence if present.
+  let c = content.trim();
+  const fence = c.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
+  if (fence) c = fence[1].trim();
+
+  try {
+    const p = JSON.parse(c);
+    if (p && typeof p === "object") {
+      return {
+        summary: typeof p.summary === "string" ? p.summary.trim() : "",
+        answer: typeof p.answer === "string" ? p.answer.trim() : "",
+      };
+    }
+  } catch {
+    // fall through to lenient extraction
+  }
+
+  const field = (name: string): string => {
+    // Capture the quoted value, tolerating escaped quotes and raw newlines.
+    const m = c.match(new RegExp(`"${name}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`));
+    if (!m) return "";
+    try {
+      return (JSON.parse(`"${m[1]}"`) as string).trim(); // unescape \n, \" etc.
+    } catch {
+      return m[1].trim();
+    }
+  };
+  const summary = field("summary");
+  const answer = field("answer");
+  // Nothing parseable at all → treat the raw reply as the working.
+  return summary || answer ? { summary, answer } : { summary: "", answer: c };
+}
 
 const SYSTEM_PROMPT = [
   "You are an expert tutor. The student must reproduce your answer in an exam and score",
@@ -19,9 +56,12 @@ const SYSTEM_PROMPT = [
   "answer boxed. Engineering answers are long; the marks are in the working.",
   "Respond with strict JSON only (no markdown fences):",
   '{"summary": "...", "answer": "..."} where',
-  "`summary` is ONE line — the boxed final answer only, Unicode math (∫ ² √ δ → λ Σ),",
-  "no steps; and `answer` is the full step-by-step exam solution, Unicode-legible,",
-  "one idea per line, code in a monospaced block. summary must match answer's result.",
+  "`summary` is ONE line — the final answer only, no steps; and `answer` is the full",
+  "step-by-step exam solution, one idea per line. summary must match answer's result.",
+  "CRITICAL — the display has NO LaTeX renderer. Use plain UNICODE math only:",
+  "write cos(2x) NOT \\cos(2x), x² NOT x^2, √ ∫ Σ ≤ → π δ as Unicode characters,",
+  "a/b for fractions. NEVER emit backslash commands (\\boxed, \\frac, \\cos) or $…$.",
+  "Wrap any code in ```language fenced blocks.",
 ].join(" ");
 
 Deno.serve(async (req) => {
@@ -99,25 +139,17 @@ Deno.serve(async (req) => {
   const content: string = completion?.choices?.[0]?.message?.content?.trim() ?? "";
   if (!content) return json({ error: "empty model reply" }, 502);
 
-  // Model was told to return {summary, answer} as strict JSON (response_format enforces
-  // valid JSON). Parse into the two-tier shape; degrade gracefully if a field is missing.
-  let summary = "";
-  let answer = "";
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === "object") {
-      summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
-      answer = typeof parsed.answer === "string" ? parsed.answer.trim() : "";
-    } else {
-      // Valid JSON but not an object (bare string/number) — treat as the working.
-      answer = content;
-    }
-  } catch {
-    // Should not happen under json_object mode; treat the whole reply as the working.
-    answer = content;
-  }
+  // Model was asked for {summary, answer} JSON, but flash sometimes wraps it in
+  // ```json fences or emits raw newlines inside strings (invalid JSON). Parse
+  // robustly: strip fences, try JSON.parse, then fall back to lenient field extraction.
+  const { summary: rawSummary, answer: rawAnswer } = parseTwoTier(content);
+  let summary = rawSummary;
+  let answer = rawAnswer;
   if (!summary && !answer) return json({ error: "empty model reply" }, 502);
-  if (!summary) summary = answer.split("\n")[0].slice(0, 200);
+  // Belt-and-suspenders: convert any LaTeX the model still emitted to Unicode,
+  // leaving fenced code untouched (§7a). Prompt asks for Unicode; this enforces it.
+  answer = unicodeAnswer(answer);
+  summary = summary ? unicodeSummary(summary) : answer.split("\n")[0].slice(0, 200);
 
   return json({ summary, answer, model, mode });
 });
