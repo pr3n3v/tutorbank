@@ -17,12 +17,13 @@ struct PreviewHarness: View {
             }
     }
 
-    // The answer with the most ```-fenced blocks — best shows the monospaced code fix.
+    // Prefer a `program` question with the most ```-fenced code (best code showcase),
+    // else the most-fenced answer of any type.
     private var codeHeavyQuestion: Question? {
-        store.bank?.subjects
-            .flatMap { $0.units }
-            .flatMap { $0.questions }
-            .max { a, b in fenceCount(a) < fenceCount(b) }
+        let all = store.bank?.subjects.flatMap { $0.units }.flatMap { $0.questions } ?? []
+        let programs = all.filter { $0.qtype == "program" && fenceCount($0) > 0 }
+        return (programs.max { fenceCount($0) < fenceCount($1) })
+            ?? all.max { fenceCount($0) < fenceCount($1) }
     }
 
     private func fenceCount(_ q: Question) -> Int {
