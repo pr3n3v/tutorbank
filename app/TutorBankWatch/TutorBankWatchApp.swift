@@ -16,6 +16,11 @@ struct TutorBankWatchApp: App {
     private var previewMode: String? {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-uitestPreviewDiagram") { return "diagram" }
+        if args.contains("-uitestPreviewVarAnswer") { return "varanswer" }
+        if args.contains("-uitestPreviewValueSwap") { return "valueswap" }
+        if args.contains("-uitestPreviewLiveSolve") { return "livesolve" }
+        if args.contains("-uitestPreviewLiveAsk") { return "liveask" }
+        if args.contains("-uitestPreviewTutorRoot") { return "tutorroot" }
         if args.contains("-uitestPreviewAnswer") { return "answer" }
         return nil
     }

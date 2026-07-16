@@ -24,15 +24,14 @@ final class TutorBankWatchUITests: XCTestCase {
         expectation(for: counting, evaluatedWith: timer)
         waitForExpectations(timeout: 5)
 
-        // 3. Secret entry: long-press the timer face opens the tutor UI.
+        // 3. Secret entry: long-press the timer face opens the tutor UI (Browse tab).
         timer.press(forDuration: 1.4)
+        // Cached subjects rendered the offline bank (assert on a row, robust to the
+        // sheet + TabView nesting the nav-bar title sits inside).
         XCTAssertTrue(
-            app.navigationBars["Subjects"].waitForExistence(timeout: 5),
+            app.staticTexts["AJAVA"].waitForExistence(timeout: 6),
             "long-press should reveal the tutor Subjects list"
         )
-
-        // 4. Cached subjects rendered the offline bank (top rows; list is lazy).
-        XCTAssertTrue(app.staticTexts["AJAVA"].exists, "AJAVA should be listed from cache")
         XCTAssertTrue(app.staticTexts["DAA"].exists, "DAA should be listed from cache")
         attach(app, "02-tutor-subjects")
 

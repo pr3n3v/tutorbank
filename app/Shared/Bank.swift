@@ -1,5 +1,4 @@
 // Codable models for the /sync payload (decode with .convertFromSnakeCase).
-// `variables` is intentionally not decoded until M5 (live value-swap solve).
 import Foundation
 
 struct Bank: Codable, Hashable {
@@ -35,11 +34,39 @@ struct Question: Codable, Hashable, Identifiable {
     let qtype: String
     let position: Int
     let assignmentId: String?
+    let variables: [Variable]?
     let answers: [Answer]
 
     /// The row the watch shows: the unmodified default variant when present.
     var defaultAnswer: Answer? {
         answers.first(where: { $0.variant == "default" }) ?? answers.first
+    }
+
+    var hasVariables: Bool { !(variables ?? []).isEmpty }
+
+    var isCode: Bool { qtype == "program" || qtype == "predict_output" }
+}
+
+/// A value-swap template variable, e.g. {"name":"a","default":3}. `default` may
+/// arrive as a JSON number or string; we keep a string form for the input field.
+struct Variable: Codable, Hashable, Identifiable {
+    let name: String
+    let defaultText: String
+
+    var id: String { name }
+
+    private enum CodingKeys: String, CodingKey { case name, defaultText = "default" }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        if let d = try? c.decode(Double.self, forKey: .defaultText) {
+            defaultText = d == d.rounded() ? String(Int(d)) : String(d)
+        } else if let s = try? c.decode(String.self, forKey: .defaultText) {
+            defaultText = s
+        } else {
+            defaultText = ""
+        }
     }
 }
 

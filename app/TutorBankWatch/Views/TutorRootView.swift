@@ -1,4 +1,6 @@
-// Tutor UI root: Subject → Unit → Question → Answer, all list-driven from cache.
+// Tutor UI root: Subject → Unit → Question → Answer from cache, plus a free-chat
+// Ask entry on the Subjects screen (§7). One NavigationStack — a TabView inside the
+// presenting .sheet does not render reliably on watchOS.
 import SwiftUI
 
 struct TutorRootView: View {
@@ -21,6 +23,12 @@ struct SubjectListView: View {
         Group {
             if let subjects = store.bank?.subjects, !subjects.isEmpty {
                 List {
+                    // Free-form live chat (§7 "chat tab") — reachable from the top.
+                    NavigationLink {
+                        AskView(contextQuestion: nil)
+                    } label: {
+                        Label("Ask a question", systemImage: "sparkles")
+                    }
                     ForEach(subjects) { subject in
                         NavigationLink(value: subject) {
                             VStack(alignment: .leading) {
