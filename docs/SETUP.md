@@ -48,14 +48,38 @@ open TutorBank.xcodeproj
 Re-run `gen_secrets.sh` whenever `.env` changes; re-run `xcodegen generate` whenever
 files are added/removed or `project.yml` changes.
 
-## 5. Xcode signing (free provisioning)
+## 5. Install on the physical Apple Watch SE 3 (free provisioning)
 
-- In Xcode, select your personal team under Signing & Capabilities for BOTH targets
-  (iOS + watchOS). One bundle ID family, two targets.
-- Free provisioning profiles expire every **7 days**.
+One-time, then a 7-day re-sign (§6). Automatic signing is pre-enabled in project.yml;
+you only pick the team.
+
+**a. Xcode account (once):** Xcode → Settings → Accounts → add your Apple ID (a free
+account is fine — no paid Developer Program needed).
+
+**b. Devices (once):**
+- Pair the Apple Watch SE 3 with your iPhone (iPhone Watch app) if not already.
+- Connect the iPhone to the Mac by USB the first time (wireless works after).
+- Enable Developer Mode: iPhone → Settings → Privacy & Security → Developer Mode → on →
+  restart. Same on the watch → Settings → Privacy & Security → Developer Mode.
+
+**c. Pick your team:** in Xcode, select the **TutorBank** target → Signing & Capabilities
+→ Team = your personal team. Repeat for the **TutorBankWatch** target.
+- If it says *"bundle identifier is not available"*, the `com.pr3n3v.*` prefix is taken —
+  change `bundleIdPrefix` in `app/project.yml` to something unique (e.g. `com.<you>`),
+  re-run `xcodegen generate`, and pick the team again.
+
+**d. Run:** choose your Apple Watch as the run destination (top bar) → Product → Run
+(⌘R). First build to a device takes a minute.
+
+**e. Trust the developer (first run only):** on the iPhone (and watch if prompted) →
+Settings → General → VPN & Device Management → your Apple ID → Trust. Then re-run.
+
+The app installs on the watch as **"StudyTimer"** (the disguise name). Launch it → the
+study timer → long-press the time for ~1.2 s to enter the tutor UI.
 
 ## 6. ⏰ Weekly re-sign ritual (Sundays)
 
-Every Sunday: plug in the iPhone, open Xcode, build & run the iOS target once (watch app
-installs alongside). That re-signs both apps for the next 7 days. If the watch app ever
-says it can't launch, this is why.
+Free-provisioning signatures expire every **7 days**. Every Sunday: connect the iPhone,
+open the project, Product → Run once. That re-signs both apps for another 7 days. If the
+watch app won't launch ("unable to verify"), this expiry is why. Free provisioning also
+caps you at **3 sideloaded apps per device**.

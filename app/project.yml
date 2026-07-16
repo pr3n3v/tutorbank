@@ -11,7 +11,9 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
-    # DEVELOPMENT_TEAM is set per-machine in Xcode (free provisioning, CLAUDE.md §1)
+    # Free provisioning: automatic signing pre-enabled; pick your personal team in
+    # Xcode → Signing & Capabilities (DEVELOPMENT_TEAM is per-machine, CLAUDE.md §1).
+    CODE_SIGN_STYLE: Automatic
 targets:
   TutorBank:
     type: application
