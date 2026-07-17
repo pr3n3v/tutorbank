@@ -92,7 +92,6 @@ struct TimerHomeView: View {
             }
             .buttonStyle(.borderedProminent)
         }
-        .navigationTitle("Study")
         .sheet(isPresented: $showTutor) {
             TutorRootView()
                 .environmentObject(store)

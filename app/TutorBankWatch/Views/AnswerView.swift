@@ -22,10 +22,22 @@ struct AnswerView: View {
                                 image: store.diagramDetailImage(for: answer.id) ?? image
                             )
                         } label: {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity)
+                            VStack(spacing: 2) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: .infinity)
+                                // Nothing else marks this as interactive at a glance —
+                                // spell it out so the zoom viewer is discoverable.
+                                Text("tap to zoom")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            // Without this, .buttonStyle(.plain) only makes the
+                            // leaf subviews tappable — the gap and the margin
+                            // around the shorter, centered caption go dead.
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }

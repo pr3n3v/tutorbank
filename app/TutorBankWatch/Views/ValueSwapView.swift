@@ -12,7 +12,10 @@ struct ValueSwapView: View {
 
     var body: some View {
         Form {
-            Section("Change values") {
+            // No section header here — the nav title already says "Change values";
+            // repeating it as a header wasted a full row of vertical space on a
+            // screen this small.
+            Section {
                 ForEach(variables) { v in
                     HStack {
                         Text(v.name).font(.footnote)

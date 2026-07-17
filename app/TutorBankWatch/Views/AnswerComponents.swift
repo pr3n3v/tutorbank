@@ -2,14 +2,26 @@
 // results from /ask (ValueSwapView, AskView). Keeps rendering identical everywhere.
 import SwiftUI
 
-/// The boxed one-line result, large type (the glance).
+/// The boxed result, large type (the glance). Generation is asked for one line,
+/// but must degrade gracefully when a model returns more.
 struct SummaryText: View {
     let summary: String
+    /// Set true where nothing else on screen holds the full text (e.g. a live
+    /// reply with no working) — the line cap only holds when the Working
+    /// section right below is guaranteed to carry the rest.
+    var unbounded = false
+
     var body: some View {
         Text(summary)
             .font(.title3.weight(.semibold))
-            .minimumScaleFactor(0.6)
+            .lineLimit(unbounded ? nil : 4)
+            .minimumScaleFactor(unbounded ? 1.0 : 0.7)
             .frame(maxWidth: .infinity, alignment: .leading)
+            // lineLimit caps line COUNT, not pixel height — at the largest
+            // accessibility text sizes 4 lines can still exceed the screen.
+            // Cap the type size for the bounded case so the guarantee holds;
+            // the unbounded case has no cap to fight since it's meant to scroll.
+            .dynamicTypeSize(unbounded ? ...DynamicTypeSize.accessibility5 : ...DynamicTypeSize.accessibility2)
     }
 }
 

@@ -52,7 +52,10 @@ struct LiveResultView: View {
             if let reply = model.reply {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
-                        SummaryText(summary: reply.summary)
+                        // No line cap when there's no Working section to hold
+                        // the rest — the summary would be silently truncated
+                        // with no way to see what was cut.
+                        SummaryText(summary: reply.summary, unbounded: reply.answer.isEmpty)
                         if !reply.answer.isEmpty {
                             Divider()
                             WorkingView(working: reply.answer)
