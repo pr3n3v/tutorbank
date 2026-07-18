@@ -35,20 +35,26 @@ brew install graphviz         # `dot` must be on PATH for diagram rendering
 
 Drop assignment PDFs/photos into `ingestion/samples/` (gitignored).
 
-## 3b. Verify & edit content (Mac review tool)
-
-Generated answers land `verified=false`. Review and approve them before trusting
-them on the watch:
+## 3b. Manage content (Mac dashboard)
 
 ```bash
-cd ingestion && python3 review.py        # opens http://127.0.0.1:8765
+cd ingestion && python3 dashboard.py     # opens http://127.0.0.1:8765
 ```
 
-A local, localhost-only web app (stdlib, no deps). Left panel queues every answer
-with **unverified / lowest-confidence first**; click one to read the question, edit
-the summary/full answer (with a live preview + the rendered diagram), then **Mark
-verified** or **Save edits**. Writes straight to Supabase with the service key from
-`.env` — keep it on localhost (it holds that key).
+A local, localhost-only web app (stdlib + pypdf, no build step). Two tabs:
+
+- **Content** — the subject → unit → question tree. Add / delete subjects, units,
+  and questions; **⬆ Upload assignment** (.docx/.pdf) under a subject → it parses the
+  file, shows the questions (fix qtypes inline), then **auto-generates** exam answers
+  with DeepSeek + renders diagrams + inserts them. Click any question to read/edit its
+  answer or **Regenerate** it. Coloured dots: grey = no answer, amber = unverified,
+  green = verified.
+- **Review** — every answer with **unverified / lowest-confidence first**; click to
+  read, edit the summary/working (live preview + diagram), then **Mark verified**.
+
+Writes to Supabase with the service key and generates with DeepSeek — both from
+`.env`. Keep it on localhost; it holds those secrets. (Deletes use the Supabase
+management token, also from `.env`.)
 
 ## 4. Xcode project (generated, not committed)
 

@@ -11,9 +11,14 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
-    # Free provisioning: automatic signing pre-enabled; pick your personal team in
-    # Xcode → Signing & Capabilities (DEVELOPMENT_TEAM is per-machine, CLAUDE.md §1).
+    # Free provisioning, automatic signing. DEVELOPMENT_TEAM is pinned here (not
+    # left to Xcode's GUI) because `xcodegen generate` rebuilds the .xcodeproj from
+    # this file every time — a GUI-only team selection gets silently wiped on the
+    # next regenerate. If you ever switch Apple ID/team, update this value (find it
+    # via `security find-identity -v -p codesigning` after adding the account in
+    # Xcode → Settings → Accounts) — CLAUDE.md §1.
     CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: A87XJKDR55
 targets:
   TutorBank:
     type: application
@@ -23,7 +28,7 @@ targets:
       - Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.studybank718b5
+        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.notesbank688c9257
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_CFBundleDisplayName: TutorBank
@@ -37,11 +42,11 @@ targets:
       - Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.studybank718b5.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.notesbank688c9257.watchkitapp
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: StudyTimer
         INFOPLIST_KEY_WKApplication: YES
-        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.pr3n3v.studybank718b5
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.pr3n3v.notesbank688c9257
   TutorBankWatchUITests:
     type: bundle.ui-testing
     platform: watchOS
@@ -49,7 +54,7 @@ targets:
       - TutorBankWatchUITests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.studybank718b5.watchkitapp.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.pr3n3v.notesbank688c9257.watchkitapp.uitests
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: TutorBankWatch

@@ -57,7 +57,9 @@ def _pdf_lines(path: str) -> list[str]:
     try:
         from pypdf import PdfReader
     except ImportError:
-        sys.exit("pypdf not installed — run: pip install pypdf")
+        # RuntimeError (not sys.exit) so a library caller like dashboard.py can
+        # catch it and return a clean error instead of dropping the connection.
+        raise RuntimeError("pypdf not installed — run: pip install pypdf")
     reader = PdfReader(path)
     text = "\n".join((p.extract_text() or "") for p in reader.pages)
     return [ln.strip() for ln in text.split("\n") if ln.strip()]
