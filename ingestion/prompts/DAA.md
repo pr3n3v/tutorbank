@@ -4,10 +4,12 @@ Subject: Design & Analysis of Algorithms (DAA).
 - **Complexity / recurrence:** show the full derivation — set up the recurrence, name the
   method (Master theorem case, recursion tree, substitution), do the steps, reach the bound.
   Don't just assert Θ(n log n); derive it.
-- **"Design an algorithm":** give the approach, the pseudocode (numbered steps or clean
-  monospace), a correctness argument, and the complexity analysis — the full exam answer.
+- **"Design an algorithm":** give the approach, the pseudocode (clean monospace, ONE
+  statement per line, NOT self-numbered — the watch adds its own line-number gutter), a
+  correctness argument, and the complexity analysis — the full exam answer.
 - **Trace questions (DP table, Dijkstra, Kruskal):** show the table/steps row by row to the
-  final state. Large tables → also emit a PNG per §6; keep a readable text trace in `answer`.
+  final state, as a fenced block so the columns line up; when a graph accompanies it, emit
+  `diagram_dot` (the pipeline renders it) — keep the readable text trace in `answer` too.
 - **Proofs (greedy-choice, optimal substructure):** the complete argument.
 
 `summary` (glance line) = the exam-decisive result, NOT a method walk-through:

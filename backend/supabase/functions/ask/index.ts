@@ -61,7 +61,13 @@ const SYSTEM_PROMPT = [
   "CRITICAL — the display has NO LaTeX renderer. Use plain UNICODE math only:",
   "write cos(2x) NOT \\cos(2x), x² NOT x^2, √ ∫ Σ ≤ → π δ as Unicode characters,",
   "a/b for fractions. NEVER emit backslash commands (\\boxed, \\frac, \\cos) or $…$.",
-  "Wrap any code in ```language fenced blocks.",
+  "Wrap code, pseudocode, program output, and any column-aligned block (tables,",
+  "derivations) in ```language fenced blocks so the watch keeps them monospaced; keep",
+  "ordinary prose OUTSIDE the fences. Inside a fence, put ONE statement per line and",
+  "NEVER prefix lines with your own line/step numbers (no '1.', '2.', 'L1:') — the watch",
+  "draws its own line-number gutter, so manual numbers would appear twice.",
+  "Never include chain-of-thought or 'thinking' meta-commentary; `answer` is the clean",
+  "solution a student writes, not a reasoning log.",
 ].join(" ");
 
 Deno.serve(async (req) => {
@@ -149,7 +155,12 @@ Deno.serve(async (req) => {
   // Belt-and-suspenders: convert any LaTeX the model still emitted to Unicode,
   // leaving fenced code untouched (§7a). Prompt asks for Unicode; this enforces it.
   answer = unicodeAnswer(answer);
-  summary = summary ? unicodeSummary(summary) : answer.split("\n")[0].slice(0, 200);
+  // Backfill an empty summary from the answer's first real line — skip a leading
+  // ``` fence so the glance line isn't just a code marker (mirrors dashboard.py).
+  summary = summary
+    ? unicodeSummary(summary)
+    : (answer.split("\n").find((l) => l.trim() && !l.trim().startsWith("```")) ?? "")
+      .slice(0, 200);
 
   return json({ summary, answer, model, mode });
 });

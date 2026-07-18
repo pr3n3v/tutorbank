@@ -21,7 +21,7 @@ struct AskView: View {
             }
             Section {
                 NavigationLink(isActive: $showResult) {
-                    LiveResultView(title: "Answer", model: model, retry: send)
+                    LiveResultView(title: "Answer", model: model, retry: send, isCode: contextQuestion?.isCode ?? false)
                 } label: {
                     Label("Ask", systemImage: "sparkles")
                 }

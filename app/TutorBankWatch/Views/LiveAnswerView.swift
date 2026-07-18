@@ -46,6 +46,9 @@ struct LiveResultView: View {
     @ObservedObject var model: LiveAnswerModel
     /// Called when the user taps retry.
     let retry: () -> Void
+    /// Monospace a fence-less answer for code questions, matching the cached
+    /// AnswerView (which passes question.isCode). Defaults false for free chat.
+    var isCode = false
 
     var body: some View {
         Group {
@@ -58,7 +61,7 @@ struct LiveResultView: View {
                         SummaryText(summary: reply.summary, unbounded: reply.answer.isEmpty)
                         if !reply.answer.isEmpty {
                             Divider()
-                            WorkingView(working: reply.answer)
+                            WorkingView(working: reply.answer, forceMono: isCode)
                         }
                     }
                 }

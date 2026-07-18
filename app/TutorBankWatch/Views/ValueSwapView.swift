@@ -28,7 +28,7 @@ struct ValueSwapView: View {
             }
             Section {
                 NavigationLink(isActive: $showResult) {
-                    LiveResultView(title: "Result", model: model, retry: solve)
+                    LiveResultView(title: "Result", model: model, retry: solve, isCode: question.isCode)
                 } label: {
                     Label("Solve", systemImage: "function")
                 }

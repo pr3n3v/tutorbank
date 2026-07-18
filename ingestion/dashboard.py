@@ -99,9 +99,24 @@ def sb_sql(query: str):
 WRITABLE = {"subjects", "units", "assignments", "questions", "answers"}
 
 
+def _coerce_answer_fields(fields: dict) -> dict:
+    """generate_answer coerces followups/confidence, but the generic create/update
+    path bypasses it. followups has no DB CHECK, so a malformed shape would persist
+    and then fail the SINGLE-SHOT /sync decode of the whole bank (Bank.swift). Clean
+    the same fields here whenever an answer row is written directly."""
+    out = dict(fields)
+    if "followups" in out:
+        out["followups"] = _clean_followups(out.get("followups"))
+    if "confidence" in out:
+        out["confidence"] = _clamp_confidence(out.get("confidence"))
+    return out
+
+
 def insert_row(table: str, row: dict) -> dict:
     if table not in WRITABLE:
         raise ValueError(f"table {table} not writable")
+    if table == "answers":
+        row = _coerce_answer_fields(row)
     res = sb("POST", f"/rest/v1/{table}", body=row, extra_headers={"Prefer": "return=representation"})
     return (res or [{}])[0]
 
@@ -109,6 +124,8 @@ def insert_row(table: str, row: dict) -> dict:
 def patch_row(table: str, row_id: str, fields: dict) -> None:
     if table not in WRITABLE:
         raise ValueError(f"table {table} not writable")
+    if table == "answers":
+        fields = _coerce_answer_fields(fields)
     sb("PATCH", f"/rest/v1/{table}?id=eq.{urllib.parse.quote(row_id)}", body=fields,
        extra_headers={"Prefer": "return=minimal"})
 
@@ -151,14 +168,19 @@ def delete_tree(kind: str, row_id: str) -> None:
 # Leaves ```-fenced code untouched so escapes like \n aren't mangled.
 # ---------------------------------------------------------------------------
 
+# Keep this table in lockstep with mathtext.ts SYMBOLS — the two converters feed the
+# same watch renderer, so a symbol missing here shows the literal word (e.g. "rho").
 _SYM = {
-    r"\cdot": "·", r"\times": "×", r"\div": "÷", r"\pm": "±", r"\leq": "≤", r"\le": "≤",
-    r"\geq": "≥", r"\ge": "≥", r"\neq": "≠", r"\ne": "≠", r"\approx": "≈", r"\to": "→",
-    r"\rightarrow": "→", r"\Rightarrow": "⇒", r"\infty": "∞", r"\int": "∫", r"\sum": "Σ",
-    r"\prod": "∏", r"\sqrt": "√", r"\partial": "∂", r"\in": "∈", r"\forall": "∀",
-    r"\exists": "∃", r"\alpha": "α", r"\beta": "β", r"\gamma": "γ", r"\delta": "δ",
-    r"\epsilon": "ε", r"\theta": "θ", r"\lambda": "λ", r"\mu": "μ", r"\pi": "π",
-    r"\sigma": "σ", r"\phi": "φ", r"\omega": "ω", r"\Delta": "Δ", r"\Sigma": "Σ", r"\Omega": "Ω",
+    r"\cdot": "·", r"\times": "×", r"\div": "÷", r"\pm": "±", r"\mp": "∓",
+    r"\leq": "≤", r"\le": "≤", r"\geq": "≥", r"\ge": "≥", r"\neq": "≠", r"\ne": "≠",
+    r"\approx": "≈", r"\equiv": "≡", r"\to": "→", r"\rightarrow": "→", r"\Rightarrow": "⇒",
+    r"\implies": "⇒", r"\infty": "∞", r"\int": "∫", r"\sum": "Σ", r"\prod": "∏",
+    r"\sqrt": "√", r"\partial": "∂", r"\nabla": "∇", r"\in": "∈", r"\notin": "∉",
+    r"\forall": "∀", r"\exists": "∃", r"\land": "∧", r"\lor": "∨",
+    r"\alpha": "α", r"\beta": "β", r"\gamma": "γ", r"\delta": "δ", r"\epsilon": "ε",
+    r"\theta": "θ", r"\lambda": "λ", r"\mu": "μ", r"\pi": "π", r"\rho": "ρ",
+    r"\sigma": "σ", r"\tau": "τ", r"\phi": "φ", r"\omega": "ω",
+    r"\Delta": "Δ", r"\Sigma": "Σ", r"\Omega": "Ω", r"\Theta": "Θ", r"\Phi": "Φ",
 }
 _SUP = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷",
         "8": "⁸", "9": "⁹", "n": "ⁿ", "x": "ˣ", "+": "⁺", "-": "⁻", "i": "ⁱ"}
@@ -171,15 +193,15 @@ def _convert(s: str) -> str:
     # (set notation {aⁿbⁿ}, grammars {S→aSb}). Only remove braces that belong to
     # the specific LaTeX constructs handled below.
     s = re.sub(r"\$\$?", "", s)  # $ / $$ math delimiters
-    s = re.sub(r"\\(?:boxed|text|mathrm|mathbf|operatorname)\s*\{([^{}]*)\}", r"\1", s)
+    s = re.sub(r"\\(?:boxed|text|mathrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}", r"\1", s)
     s = re.sub(r"\\left|\\right", "", s)
     s = re.sub(r"\\d?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}", r"(\1)/(\2)", s)
     for k, v in _SYM.items():
         s = s.replace(k, v)
-    s = re.sub(r"\^\{([0-9nxi+\-]+)\}", lambda m: "".join(_SUP.get(c, "^" + c) for c in m.group(1)), s)
-    s = re.sub(r"\^([0-9nxi+\-])", lambda m: _SUP.get(m.group(1), "^" + m.group(1)), s)
-    s = re.sub(r"_\{([0-9nij]+)\}", lambda m: "".join(_SUB.get(c, "_" + c) for c in m.group(1)), s)
-    s = re.sub(r"_([0-9nij])", lambda m: _SUB.get(m.group(1), "_" + m.group(1)), s)
+    # Single optional-brace, multi-char matcher — mirrors mathtext.ts (so x^23 → x²³
+    # and a_12 → a₁₂ on both paths, not just the first digit).
+    s = re.sub(r"\^\{?([0-9nxi+\-]+)\}?", lambda m: "".join(_SUP.get(c, "^" + c) for c in m.group(1)), s)
+    s = re.sub(r"_\{?([0-9nij]+)\}?", lambda m: "".join(_SUB.get(c, "_" + c) for c in m.group(1)), s)
     s = re.sub(r"\\([a-zA-Z]+)", r"\1", s)  # strip backslash before leftover word commands
     return s
 
@@ -236,6 +258,11 @@ def generate_answer(qtext: str, qtype: str, subject: dict, marks=None) -> dict:
     answer = unicode_answer(data.get("answer", ""))
     if not summary and not answer:
         raise RuntimeError("empty model reply")
+    # Backfill an empty glance line from the answer's first real line (skip a leading
+    # ``` fence) so the watch never shows a blank summary (mirrors ask/index.ts).
+    if not summary and answer:
+        summary = next((l.strip() for l in answer.splitlines()
+                        if l.strip() and not l.strip().startswith("```")), "")[:200]
     return {
         "summary": summary,
         "answer": answer,

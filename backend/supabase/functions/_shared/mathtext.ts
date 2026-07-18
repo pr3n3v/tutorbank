@@ -37,7 +37,9 @@ function convert(s: string): string {
   t = t.replace(/_\{?([0-9nij]+)\}?/g, (_, g: string) => [...g].map((c) => SUB[c] ?? `_${c}`).join(""));
   // strip backslash before remaining word commands (\cos -> cos, \sin -> sin)
   t = t.replace(/\\([a-zA-Z]+)/g, "$1");
-  t = t.replace(/[{}]/g, ""); // leftover braces
+  // NB: do NOT blanket-strip { } — braces are legitimate content in FLAT/DAA
+  // (set notation {q0,q1}, grammars {S→aSb}). The \boxed/\text/\frac braces were
+  // already consumed above. (Mirrors ingestion/dashboard.py _convert.)
   return t;
 }
 

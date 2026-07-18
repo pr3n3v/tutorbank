@@ -10,7 +10,10 @@ struct AnswerView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 if let answer = question.defaultAnswer {
-                    SummaryText(summary: answer.summary)
+                    // Lift the 4-line cap when no Working section follows (diagram-only
+                    // or summary-only answers) — else the glance line silently truncates
+                    // with nothing below to carry the rest (mirrors LiveResultView).
+                    SummaryText(summary: answer.summary, unbounded: (answer.answer ?? "").isEmpty)
 
                     // Gate on the bank, not just file existence — a cached PNG whose
                     // answer no longer has a watch diagram is stale, not decoration.
