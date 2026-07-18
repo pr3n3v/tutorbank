@@ -415,6 +415,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        # Never cache — this is a live dev tool; a plain refresh should always get
+        # the current page/data, so an edit here is never masked by a stale cache.
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
 
