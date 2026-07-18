@@ -36,9 +36,7 @@ struct WorkingView: View {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(Self.segments(working).enumerated()), id: \.offset) { _, seg in
                     if seg.isCode {
-                        Text(seg.text)
-                            .font(.system(size: 13, design: .monospaced))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        CodeBlock(code: seg.text)
                     } else {
                         Text(seg.text)
                             .font(.footnote)
@@ -70,6 +68,40 @@ struct WorkingView: View {
             if !trimmed.isEmpty { out.append((trimmed, isCode)) }
         }
         return out
+    }
+}
+
+/// A monospaced code block with a line-number gutter. When a line is too wide for
+/// the watch it wraps, but — because the number sits in its own top-aligned column —
+/// the wrapped continuation indents under the code with NO number, so you can always
+/// tell where a statement begins and ends (the wrap-ambiguity fix, §7a).
+struct CodeBlock: View {
+    let code: String
+
+    private var lines: [Substring] {
+        // Keep blank lines (they're real numbered lines in code).
+        code.split(separator: "\n", omittingEmptySubsequences: false)
+    }
+
+    // Widen the gutter for 3-digit line counts so long programs stay aligned.
+    private var gutterWidth: CGFloat { lines.count >= 100 ? 26 : 20 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { i, line in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("\(i + 1)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: gutterWidth, alignment: .trailing)
+                    Text(line.isEmpty ? " " : String(line))
+                        .font(.system(size: 13, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
