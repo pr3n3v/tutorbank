@@ -29,6 +29,10 @@ Rendering rules (the watch has no LaTeX engine and no web view):
   listings, DP tables, derivations whose columns must line up) in triple-backtick fenced
   blocks (```), so the watch renders them monospaced with alignment intact. Prose stays
   outside the fences. Do not fence ordinary sentences.
+- Inside a fenced block, put ONE statement per line, and do NOT prefix lines with your
+  own line/step numbers (no "1.", "2.", "L1:"). The watch adds a line-number gutter
+  automatically, so manual numbers would appear twice. If you must refer to a step in
+  the prose, count from the top ("line 3") — don't bake the number into the code.
 - Automata, graphs, and trees → emit `diagram_dot` (Graphviz DOT). Never ASCII art,
   never hand-placed-coordinate SVG.
 
