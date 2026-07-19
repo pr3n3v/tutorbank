@@ -33,8 +33,11 @@ Rendering rules (the watch has no LaTeX engine and no web view):
   own line/step numbers (no "1.", "2.", "L1:"). The watch adds a line-number gutter
   automatically, so manual numbers would appear twice. If you must refer to a step in
   the prose, count from the top ("line 3") — don't bake the number into the code.
-- Automata, graphs, and trees → emit `diagram_dot` (Graphviz DOT). Never ASCII art,
-  never hand-placed-coordinate SVG.
+- Automata, graphs, and trees → emit `diagram_dot` (Graphviz DOT). ALSO emit
+  `diagram_dot` whenever the question explicitly asks for a diagram — architecture,
+  block, and flow diagrams are fine (use labeled boxes and edges). Never ASCII art,
+  never a "(see the diagram below)" reference with no actual `diagram_dot`, never
+  hand-placed-coordinate SVG.
 
 Other fields:
 - `followups`: up to 3 likely student follow-up questions, each with a one-line answer.
