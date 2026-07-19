@@ -37,7 +37,6 @@ Rendering rules (the watch has no LaTeX engine and no web view):
   never hand-placed-coordinate SVG.
 
 Other fields:
-- `final_answer`: the boxed final result restated bare, or null if there is no single result.
 - `followups`: up to 3 likely student follow-up questions, each with a one-line answer.
 - `confidence`: your honest self-rating 0–1 that the full solution is correct.
 - Never include model chain-of-thought or "thinking" meta-commentary — `answer` is the
@@ -46,5 +45,5 @@ Other fields:
 
 JSON shape:
 {"summary": "boxed final answer, one line", "answer": "full exam-scoring worked solution",
- "final_answer": "... or null", "diagram_dot": "... or null",
+ "diagram_dot": "... or null",
  "followups": [{"q": "...", "a": "..."}], "confidence": 0.0}

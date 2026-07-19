@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
         questions (
           id, text, qtype, variables, position, assignment_id,
           answers (
-            id, variant, summary, answer, final_answer, followups,
+            id, variant, summary, answer, followups,
             diagram_png_watch, diagram_png_phone, verified, confidence
           )
         )

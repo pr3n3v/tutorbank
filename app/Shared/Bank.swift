@@ -75,7 +75,6 @@ struct Answer: Codable, Hashable, Identifiable {
     let variant: String
     let summary: String
     let answer: String?
-    let finalAnswer: String?
     let followups: [Followup]?
     let diagramWatchUrl: String?
     let diagramPhoneUrl: String?

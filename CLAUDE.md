@@ -108,7 +108,8 @@ answers
   summary text             -- ★ THE GLANCE LINE. One line, boxed final answer, Unicode math.
   answer text              -- ★ FULL EXAM-SCORING solution: every step, method, boxed final.
                            --   Shown on the watch (scroll). First-class, not storage.
-  final_answer text        -- boxed final result where applicable
+  final_answer text        -- DEPRECATED/unused: retained column, no longer written or synced
+                           --   (summary already carries the boxed result; dropped 2026-07-19)
   diagram_dot text         -- nullable; Graphviz DOT source
   diagram_png_watch text   -- nullable; storage path, sized for SE 3 (see §6)
   diagram_png_phone text   -- nullable; storage path, HIGH-RES render for the watch zoom viewer (§6; legacy column name)
@@ -164,7 +165,6 @@ One structured call per question. System prompt = base rules + the subject's
 {
   "summary": "one exam-ready line: the boxed final answer, Unicode math (∫ ² √ δ →), no steps",
   "answer": "FULL exam-scoring worked solution: every step, method named, final answer boxed",
-  "final_answer": "boxed final result or null",
   "diagram_dot": "graphviz DOT or null",
   "followups": [{"q": "...", "a": "one line"}],
   "confidence": 0.0

@@ -266,7 +266,6 @@ def generate_answer(qtext: str, qtype: str, subject: dict, marks=None) -> dict:
     return {
         "summary": summary,
         "answer": answer,
-        "final_answer": data.get("final_answer"),
         "diagram_dot": data.get("diagram_dot"),
         # Coerce to the [{q,a}] shape the watch (Bank.swift) decodes — one bad
         # followup would otherwise fail the decode of the ENTIRE /sync payload.
@@ -344,7 +343,7 @@ def generate_for_question(question_id: str, marks=None) -> dict:
     res = sb("POST", "/rest/v1/answers?on_conflict=question_id,variant",
              body={
                  "question_id": question_id, "variant": "default",
-                 "summary": gen["summary"], "answer": gen["answer"], "final_answer": gen["final_answer"],
+                 "summary": gen["summary"], "answer": gen["answer"],
                  "diagram_dot": gen["diagram_dot"], "diagram_png_watch": None, "diagram_png_phone": None,
                  "followups": gen["followups"], "confidence": gen["confidence"],
                  "model_used": MODELS["accurate"], "verified": False,
@@ -402,7 +401,7 @@ def fetch_tree() -> list[dict]:
 
 
 def fetch_answer(question_id: str) -> dict | None:
-    select = ("id,summary,answer,final_answer,followups,confidence,verified,model_used,"
+    select = ("id,summary,answer,followups,confidence,verified,model_used,"
               "diagram_png_watch,diagram_png_phone,variant")
     rows = sb("GET", f"/rest/v1/answers?question_id=eq.{urllib.parse.quote(question_id)}"
                      f"&variant=eq.default&select={urllib.parse.quote(select)}")
@@ -497,7 +496,7 @@ class Handler(BaseHTTPRequestHandler):
                 patch_row("answers", body["id"], {"verified": bool(body.get("verified"))}); self._json({"ok": True})
             elif p.path == "/api/save":
                 patch_row("answers", body["id"],
-                          {k: body[k] for k in ("summary", "answer", "final_answer") if k in body})
+                          {k: body[k] for k in ("summary", "answer") if k in body})
                 self._json({"ok": True})
             elif p.path == "/api/upload":
                 raw = base64.b64decode(body["data_b64"])
