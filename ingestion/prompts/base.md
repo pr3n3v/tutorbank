@@ -21,7 +21,11 @@ You produce TWO tiers for every question, both mandatory:
    breaking eye contact.
 
 Rendering rules (the watch has no LaTeX engine and no web view):
-- `summary` uses Unicode math (∫ ² √ δ → λ ≤ Σ ⁿ ₁), never LaTeX.
+- `summary` uses Unicode math (∫ ² √ δ → λ ≤ Σ), never LaTeX.
+- Sub/superscripts: DIGITS may use Unicode (x², x₁, A⁻¹) — those render. But for LETTER
+  indices/exponents the watch font is missing many glyphs (subscript j "ⱼ" shows as a ☐),
+  so write letters as ASCII: a_ij (not aᵢⱼ), A^T (not Aᵀ), aⁿ→a^n, v_n, a_(n+1). Group a
+  multi-symbol index in parentheses: u_(n+1), x^(k-1).
 - `answer` should be Unicode-legible too; steps newline-separated, one idea per line.
   Full LaTeX may additionally appear where the phone benefits, but a Unicode rendering of
   each step must be present so the watch can show it as plain text.

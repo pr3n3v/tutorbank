@@ -182,10 +182,21 @@ _SYM = {
     r"\sigma": "σ", r"\tau": "τ", r"\phi": "φ", r"\omega": "ω",
     r"\Delta": "Δ", r"\Sigma": "Σ", r"\Omega": "Ω", r"\Theta": "Θ", r"\Phi": "Φ",
 }
+# DIGIT (and sign) super/subscripts render reliably in the watchOS font; LETTER ones
+# (esp. ⱼ U+2C7C, ᵢ) are missing and show as ☐/?, so a subscript/superscript containing
+# a letter falls back to ASCII ^n / _ij (see _script). Keeps x², x₁, A⁻¹ pretty.
 _SUP = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷",
-        "8": "⁸", "9": "⁹", "n": "ⁿ", "x": "ˣ", "+": "⁺", "-": "⁻", "i": "ⁱ"}
+        "8": "⁸", "9": "⁹", "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾"}
 _SUB = {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇",
-        "8": "₈", "9": "₉", "n": "ₙ", "i": "ᵢ", "j": "ⱼ"}
+        "8": "₈", "9": "₉", "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎"}
+
+
+def _script(g, uni, lead):
+    """Digit/sign runs → Unicode super/subscripts (x², A⁻¹); anything with a letter →
+    ASCII (a^n, a_ij), wrapped in parens when it holds a +/-/= so a_(n+1) stays clear."""
+    if all(c in uni for c in g):
+        return "".join(uni[c] for c in g)
+    return lead + (f"({g})" if (any(c in "+-=" for c in g) and len(g) > 1) else g)
 
 
 def _convert(s: str) -> str:
@@ -198,10 +209,12 @@ def _convert(s: str) -> str:
     s = re.sub(r"\\d?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}", r"(\1)/(\2)", s)
     for k, v in _SYM.items():
         s = s.replace(k, v)
-    # Single optional-brace, multi-char matcher — mirrors mathtext.ts (so x^23 → x²³
-    # and a_12 → a₁₂ on both paths, not just the first digit).
-    s = re.sub(r"\^\{?([0-9nxi+\-]+)\}?", lambda m: "".join(_SUP.get(c, "^" + c) for c in m.group(1)), s)
-    s = re.sub(r"_\{?([0-9nij]+)\}?", lambda m: "".join(_SUB.get(c, "_" + c) for c in m.group(1)), s)
+    # Braced group first, then a bare digit/sign run or a single bare letter. Mirrors
+    # mathtext.ts. Letter scripts become ASCII (^n, _ij) — the watch font lacks ⱼ etc.
+    s = re.sub(r"\^\{([^{}]+)\}", lambda m: _script(m.group(1), _SUP, "^"), s)
+    s = re.sub(r"_\{([^{}]+)\}", lambda m: _script(m.group(1), _SUB, "_"), s)
+    s = re.sub(r"\^([0-9+\-]+|[A-Za-z])", lambda m: _script(m.group(1), _SUP, "^"), s)
+    s = re.sub(r"_([0-9+\-]+|[A-Za-z])", lambda m: _script(m.group(1), _SUB, "_"), s)
     s = re.sub(r"\\([a-zA-Z]+)", r"\1", s)  # strip backslash before leftover word commands
     return s
 
